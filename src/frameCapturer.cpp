@@ -183,7 +183,7 @@ void FrameCapturer::initEncoding(std::function<void(uint8_t *buf, int buf_size)>
   videoTrack->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
   videoTrack->time_base = (AVRational){1, 30};
   videoTrack->avg_frame_rate = (AVRational){30, 1};
-  muxerIOBuf = new uint8_t[avioBufSize];
+  muxerIOBuf = (uint8_t*)av_malloc(avioBufSize);
   muxerIO = avio_alloc_context(muxerIOBuf, avioBufSize, 1, nullptr, nullptr, staticBufferWriteCallback, nullptr);
   muxer->pb = muxerIO;
   muxer->flags = AVFMT_FLAG_CUSTOM_IO;
@@ -268,7 +268,6 @@ void FrameCapturer::captureEncodedFrame()
 void FrameCapturer::destroyEncoding()
 {
   avformat_free_context(muxer);
-  delete [] muxerIOBuf;
   avio_context_free(&muxerIO);
   sws_freeContext(swsEncCont);
   avcodec_free_context(&enC);
@@ -294,7 +293,7 @@ void FrameCapturer::initDecoding(std::function<int(uint8_t *buf, int buf_size)> 
   // decoding preps
   AVCodec *codec = avcodec_find_decoder(codecId);
   deC = avcodec_alloc_context3(codec);
-  swsDecCont = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_YUYV422, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+  swsDecCont = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
   deC->width = width;
   deC->height = height;
   deC->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -307,7 +306,7 @@ void FrameCapturer::initDecoding(std::function<int(uint8_t *buf, int buf_size)> 
 
   // demuxing preps
   demuxer = avformat_alloc_context();
-  demuxerIOBuf = new uint8_t[avioBufSize];
+  demuxerIOBuf = (uint8_t*)av_malloc(avioBufSize);
   demuxerIO = avio_alloc_context(demuxerIOBuf, avioBufSize, 0, nullptr, staticBufferReadCallback, nullptr, nullptr);
   demuxer->pb = demuxerIO;
   avformat_open_input(&demuxer, nullptr, nullptr, nullptr);
@@ -343,12 +342,12 @@ Frame FrameCapturer::getDecodedFrame()
     AVFrame *destDcFrame = av_frame_alloc();
     destDcFrame->width = width;
     destDcFrame->height = height;
-    destDcFrame->format = AV_PIX_FMT_YUYV422;
-    av_image_alloc(destDcFrame->data, destDcFrame->linesize, width, height, AV_PIX_FMT_YUYV422, 1);
+    destDcFrame->format = AV_PIX_FMT_RGB24;
+    av_image_alloc(destDcFrame->data, destDcFrame->linesize, width, height, AV_PIX_FMT_RGB24, 1);
     sws_scale(swsDecCont, dcFrame->data, dcFrame->linesize, 0, height, destDcFrame->data, destDcFrame->linesize);
-    uint32_t bufSize = av_image_get_buffer_size(AV_PIX_FMT_YUYV422, width, height, 1);
+    uint32_t bufSize = av_image_get_buffer_size(AV_PIX_FMT_RGB24, width, height, 1);
     uint8_t *decodedData = new uint8_t[bufSize];
-    av_image_copy_to_buffer(decodedData, bufSize, destDcFrame->data, destDcFrame->linesize, AV_PIX_FMT_YUYV422, width, height, 1);
+    av_image_copy_to_buffer(decodedData, bufSize, destDcFrame->data, destDcFrame->linesize, AV_PIX_FMT_RGB24, width, height, 1);
     av_freep(&destDcFrame->data[0]);
     av_frame_free(&dcFrame);
     av_frame_free(&destDcFrame);
@@ -361,7 +360,6 @@ Frame FrameCapturer::getDecodedFrame()
 void FrameCapturer::destroyDecoding()
 {
   avformat_free_context(demuxer);
-  delete [] demuxerIOBuf;
   avio_context_free(&demuxerIO);
   sws_freeContext(swsDecCont);
   avcodec_free_context(&deC);

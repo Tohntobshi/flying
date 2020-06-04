@@ -18,6 +18,7 @@ void FrameSender::iterate()
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     return;
   }
+  std::cout << "frame sender: accepted connection...\n";
   sendError = false;
   while(!shouldStop())
   {

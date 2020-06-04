@@ -9,7 +9,9 @@ set(
     src/debugger.cpp
     src/separateLoop.cpp
     src/controlsReceiver.cpp
-    # src/frameCapturer.cpp
+    src/frameCapturer.cpp
+    src/separateLoop.cpp
+    src/frameSender.cpp
 )
 
 include_directories(libs/glm/include)
@@ -23,9 +25,9 @@ target_link_libraries(flying pigpio)
 
 target_link_libraries(flying pthread)
 
-# target_link_libraries(flying avcodec)
-# target_link_libraries(flying avutil)
-# target_link_libraries(flying swscale)
-# target_link_libraries(flying avformat)
+target_link_libraries(flying avcodec)
+target_link_libraries(flying avutil)
+target_link_libraries(flying swscale)
+target_link_libraries(flying avformat)
 
 target_link_libraries(flying ncurses)

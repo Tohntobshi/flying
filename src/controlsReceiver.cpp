@@ -9,6 +9,7 @@ void ControlsReceiver::iterate()
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     return;
   }
+  std::cout << "controls receiver: accepted connection...\n";
   while (!shouldStop())
   {
     Packet pk = conn.receivePacket();
