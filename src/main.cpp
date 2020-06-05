@@ -1,38 +1,35 @@
-#include <thread>
-#include <chrono>
-#include "connection.h"
 #include "flightController.h"
-#include <iostream>
-#include "debugger.h"
+#include "debugSender.h"
 #include "controlsReceiver.h"
 #include "signal.h"
 #include "frameSender.h"
+#include <iostream>
 
 int main()
 {
   signal(SIGPIPE, SIG_IGN);
 
-  FrameSender frameSender;
-  frameSender.start();
+  // FrameSender frameSender;
+  // frameSender.start();
 
-  // Debugger debugger;
-  // debugger.start();
+  DebugSender debugger("8082");
+  debugger.start();
 
-  FlightController * flightControllerPtr = FlightController::Init(false, nullptr);
+  FlightController * flightControllerPtr = FlightController::Init(false, &debugger);
   flightControllerPtr->start();
   
   ControlsReceiver controlsReceiver(flightControllerPtr);
   controlsReceiver.start();
 
 
-  // debugger.join();
+  debugger.join();
 
   flightControllerPtr->join();
   flightControllerPtr->Destroy();
 
   controlsReceiver.join();
 
-  frameSender.join();
+  // frameSender.join();
 
   return 0;
 }

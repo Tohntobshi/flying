@@ -31,7 +31,7 @@ static float ACC_TRUST = 0.1f;
 
 FlightController * FlightController::instance = nullptr;
 
-FlightController * FlightController::Init(bool cal, Debugger * deb)
+FlightController * FlightController::Init(bool cal, DebugSender * deb)
 {
   if (instance != nullptr)
   {
@@ -47,7 +47,7 @@ void FlightController::Destroy()
   instance = nullptr;
 }
 
-FlightController::FlightController(bool cal, Debugger * deb): debugger(deb)
+FlightController::FlightController(bool cal, DebugSender * deb): debugger(deb)
 {
   if (gpioInitialise() < 0)
   {

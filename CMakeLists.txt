@@ -6,7 +6,8 @@ set(
     src/main.cpp
     src/flightController.cpp
     src/connection.cpp
-    src/debugger.cpp
+    src/debugSender.cpp
+    src/packetsSender.cpp
     src/separateLoop.cpp
     src/controlsReceiver.cpp
     src/frameCapturer.cpp

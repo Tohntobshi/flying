@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "glm/glm.hpp"
 #include "separateLoop.h"
-#include "debugger.h"
+#include "debugSender.h"
 
 #define STOP_MOVING 0U
 #define INCREASE 1U
@@ -27,7 +27,7 @@ class FlightController: public SeparateLoop
 {
 private:
   static FlightController * instance;  
-  FlightController(bool calibrate, Debugger * debugger);
+  FlightController(bool calibrate, DebugSender * debugger);
   ~FlightController();
   int val = 0;
   
@@ -57,9 +57,9 @@ private:
   float pitchBias = 0.f;
   float rollBias = 0.f;
   void iterate();
-  Debugger * debugger = nullptr;
+  DebugSender * debugger = nullptr;
 public:
-  static FlightController * Init(bool calibrate, Debugger * debugger);
+  static FlightController * Init(bool calibrate, DebugSender * debugger);
   static void Destroy();
   void command(uint8_t* command, uint8_t size); // may be called from separate thread
 };
