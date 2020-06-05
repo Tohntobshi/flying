@@ -1,5 +1,9 @@
 #include "controlsReceiver.h"
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
+using namespace rapidjson;
 
 void ControlsReceiver::iterate()
 {
@@ -15,18 +19,24 @@ void ControlsReceiver::iterate()
     Packet pk = conn.receivePacket();
     if (pk.size > 0)
     {
-      int a = pk.data[0];
-      std::cout << "received " << a <<"\n";
-      if (flightController != nullptr)
-      {
-        flightController->command(pk.data, pk.size);
-      }
+      parseCommand(pk.data);
       delete [] pk.data;
     }
     else
     {
       break;
     }
+  }
+}
+
+void ControlsReceiver::parseCommand(uint8_t * data)
+{
+  Document d;
+  d.Parse((char *)data);
+  uint8_t type = d["t"].GetUint();
+  if (flightController != nullptr)
+  {
+    flightController->command(type);
   }
 }
 

@@ -8,6 +8,8 @@ set(
     src/connection.cpp
     src/debugSender.cpp
     src/packetsSender.cpp
+    src/packetsReceiver.cpp
+    src/packetsTransmitter.cpp
     src/separateLoop.cpp
     src/controlsReceiver.cpp
     src/frameCapturer.cpp

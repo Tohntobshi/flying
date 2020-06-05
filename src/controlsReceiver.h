@@ -10,6 +10,7 @@ private:
   void iterate();
   void onStop();
   FlightController * flightController = nullptr;
+  void parseCommand(uint8_t * data);
 public:
   ControlsReceiver(FlightController * flightController);
 };

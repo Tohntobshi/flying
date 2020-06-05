@@ -3,25 +3,7 @@
 #include "glm/glm.hpp"
 #include "separateLoop.h"
 #include "debugSender.h"
-
-#define STOP_MOVING 0U
-#define INCREASE 1U
-#define DECREASE 2U
-#define INCREASE_PROP_COEF 3U
-#define DECREASE_PROP_COEF 4U
-#define INCLINE_FORW 5U
-#define INCLINE_BACKW 6U
-#define INCLINE_LEFT 7U
-#define INCLINE_RIGHT 8U
-#define INCLINE_DEFAULT 9U
-#define INCREASE_DER_COEF 10U
-#define DECREASE_DER_COEF 11U
-#define INCREASE_INT_COEF 12U
-#define DECREASE_INT_COEF 13U
-#define INCREASE_PITCH_BIAS 14U
-#define DECREASE_PITCH_BIAS 15U
-#define INCREASE_ROLL_BIAS 16U
-#define DECREASE_ROLL_BIAS 17U
+#include "actions.h"
 
 class FlightController: public SeparateLoop
 {
@@ -61,5 +43,5 @@ private:
 public:
   static FlightController * Init(bool calibrate, DebugSender * debugger);
   static void Destroy();
-  void command(uint8_t* command, uint8_t size); // may be called from separate thread
+  void command(uint8_t command); // may be called from separate thread
 };

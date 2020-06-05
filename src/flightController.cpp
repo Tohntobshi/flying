@@ -71,10 +71,10 @@ FlightController::~FlightController()
 {
   gpioTerminate();
 }
-void FlightController::command(uint8_t* command, uint8_t size)
+void FlightController::command(uint8_t command)
 {
   std::unique_lock<std::mutex> lck(commandMutex);
-  switch (command[0])
+  switch (command)
   {
   case INCREASE:
     val = (val >= MAX_VAL) ? MAX_VAL : val + 50;
