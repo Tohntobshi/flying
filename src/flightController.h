@@ -9,7 +9,7 @@ class FlightController: public SeparateLoop
 {
 private:
   static FlightController * instance;  
-  FlightController(bool calibrate, DebugSender * debugger);
+  FlightController(DebugSender * debugger);
   ~FlightController();
   int val = 0;
   
@@ -38,10 +38,20 @@ private:
   float rollErrInt = 0.f;
   float pitchBias = 0.f;
   float rollBias = 0.f;
+  float accTrust = 0.1f;
+  float prevValInfluence = 0.f;
   void iterate();
   DebugSender * debugger = nullptr;
 public:
-  static FlightController * Init(bool calibrate, DebugSender * debugger);
+  static FlightController * Init(DebugSender * debugger);
   static void Destroy();
   void command(uint8_t command); // may be called from separate thread
+  void setPropCoef(float val);
+  void setDerCoef(float val);
+  void setIntCoef(float val);
+  void setPitchBias(float val);
+  void setRollBias(float val);
+  void setRPM(int val);
+  void setAccTrust(float val);
+  void setPrevValInfluence(float val);
 };

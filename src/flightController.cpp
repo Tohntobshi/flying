@@ -27,17 +27,15 @@ static vec3 frVec = normalize(vec3(1.0, 1.0, 0.0));
 static vec3 blVec = normalize(vec3(-1.0, -1.0, 0.0));
 static vec3 brVec = normalize(vec3(1.0, -1.0, 0.0));
 
-static float ACC_TRUST = 0.1f;
-
 FlightController * FlightController::instance = nullptr;
 
-FlightController * FlightController::Init(bool cal, DebugSender * deb)
+FlightController * FlightController::Init(DebugSender * deb)
 {
   if (instance != nullptr)
   {
     return instance;
   }
-  instance = new FlightController(cal, deb);
+  instance = new FlightController(deb);
   return instance;
 }
 
@@ -47,8 +45,9 @@ void FlightController::Destroy()
   instance = nullptr;
 }
 
-FlightController::FlightController(bool cal, DebugSender * deb): debugger(deb)
+FlightController::FlightController(DebugSender * deb): debugger(deb)
 {
+   std::unique_lock<std::mutex> lck(commandMutex);
   if (gpioInitialise() < 0)
   {
     std::cout << "cant init gpio\n";
@@ -63,73 +62,13 @@ FlightController::FlightController(bool cal, DebugSender * deb): debugger(deb)
   gpioSetMode(MOTOR_BL_PIN, PI_OUTPUT);
   gpioSetMode(MOTOR_BR_PIN, PI_OUTPUT);
   controlAll(0);
-  if (cal) calibrate();
-  arm();
+  // if (cal) calibrate();
+  // arm();
 }
 
 FlightController::~FlightController()
 {
   gpioTerminate();
-}
-void FlightController::command(uint8_t command)
-{
-  std::unique_lock<std::mutex> lck(commandMutex);
-  switch (command)
-  {
-  case INCREASE:
-    val = (val >= MAX_VAL) ? MAX_VAL : val + 50;
-    std::cout << "val " << val << "\n";
-    break;
-  case DECREASE:
-    val = (val <= MIN_VAL) ? MIN_VAL : val - 50;
-    std::cout << "val " << val << "\n";
-    break;
-  case INCREASE_PROP_COEF:
-    proportionalCoef += 0.05f;
-    std::cout << "proportionalCoef " << proportionalCoef << "\n";
-    break;
-  case DECREASE_PROP_COEF:
-    proportionalCoef -= 0.05f;
-    std::cout << "proportionalCoef " << proportionalCoef << "\n";
-    break;
-  case INCREASE_DER_COEF:
-    derivativeCoef += 0.05f;
-    std::cout << "derivativeCoef " << derivativeCoef << "\n";
-    break;
-  case DECREASE_DER_COEF:
-    derivativeCoef -= 0.05f;
-    std::cout << "derivativeCoef " << derivativeCoef << "\n";
-    break;
-  case STOP_MOVING:
-    val = MIN_VAL;
-    std::cout << "val " << val << "\n";
-    break;
-  case INCLINE_FORW:
-    desiredPitch = -20.f;
-    desiredRoll = 0.f;
-    std::cout << "incline forw\n";
-    break;
-  case INCLINE_BACKW:
-    desiredPitch = 20.f;
-    desiredRoll = 0.f;
-    std::cout << "incline backw\n";
-    break;
-  case INCLINE_LEFT:
-    desiredPitch = 0.f;
-    desiredRoll = 20.f;
-    std::cout << "incline left\n";
-    break;
-  case INCLINE_RIGHT:
-    desiredPitch = 0.f;
-    desiredRoll = -20.f;
-    std::cout << "incline right\n";
-    break;
-  case INCLINE_DEFAULT:
-    desiredPitch = 0.f;
-    desiredRoll = 0.f;
-    std::cout << "incline default\n";
-    break;
-  }
 }
 
 void FlightController::arm()
@@ -158,6 +97,7 @@ void FlightController::calibrate()
   std::this_thread::sleep_for(std::chrono::seconds(6));
   std::cout << "calibrate finished\n";
   controlAll(0);
+  val = 0;
 }
 
 void FlightController::controlAll(uint32_t val)
@@ -226,6 +166,7 @@ vec3 FlightController::getGyroData()
 
 void FlightController::iterate()
 {
+  std::unique_lock<std::mutex> lck(commandMutex);
   vec3 acc = normalize(getAccData());
   vec3 gyro = getGyroData();
   float accPitch = degrees(atan2(acc.x, acc.z)) + pitchBias;
@@ -234,11 +175,11 @@ void FlightController::iterate()
   float secondsElapsed = (double)(currentTimestamp - prevTimeStamp) / 1000.0;
   float pitchChangeRate = - gyro.y;
   float rollChangeRate = - gyro.x;
-  float currentPitch = accPitch * ACC_TRUST + (1.f - ACC_TRUST) * (prevPitch + pitchChangeRate * secondsElapsed);
-  float currentRoll = accRoll * ACC_TRUST + (1.f - ACC_TRUST) * (prevRoll + rollChangeRate * secondsElapsed);
-  
+  float currentPitch = accPitch * accTrust + (1.f - accTrust) * (prevPitch + pitchChangeRate * secondsElapsed);
+  float currentRoll = accRoll * accTrust + (1.f - accTrust) * (prevRoll + rollChangeRate * secondsElapsed);
+  currentPitch = (1.f - prevValInfluence) * currentPitch + prevValInfluence * prevPitch;
+  currentRoll = (1.f - prevValInfluence) * currentRoll + prevValInfluence * prevRoll;
   // std::cout << "pitch " << currentPitch << " roll " << currentRoll << " seconds elapsed " << secondsElapsed << "\n";
-  std::unique_lock<std::mutex> lck(commandMutex);
   // // one implementation
   // float joyPitch = degrees(atan2(joystickPos.y, joystickPos.z));
   // float joyRoll = degrees(atan2(joystickPos.x, joystickPos.z));
@@ -270,10 +211,14 @@ void FlightController::iterate()
 
   int pitchAdjust = currentPitchError * proportionalCoef + pitchErrorChangeRate * derivativeCoef + pitchErrInt * integralCoef;
   int rollAdjust = currentRollError * proportionalCoef + rollErrorChangeRate * derivativeCoef + rollErrInt * integralCoef;
-  if (val <= MIN_VAL)
+  if (val < MIN_VAL)
+  {
+    controlAll(0);
+    // std::cout << "pitchAdjust " << pitchAdjust << " rollAdjust " << rollAdjust << "\n";
+  }
+  else if (val == MIN_VAL)
   {
     controlAll(MIN_VAL);
-    // std::cout << "pitchAdjust " << pitchAdjust << " rollAdjust " << rollAdjust << "\n";
   }
   else
   {
@@ -288,4 +233,91 @@ void FlightController::iterate()
     debugger->sendInfo(currentPitchError, currentRollError, currentTimestamp);
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
+}
+
+void FlightController::command(uint8_t command)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  switch (command)
+  {
+  case INCLINE_FORW:
+    desiredPitch = -20.f;
+    desiredRoll = 0.f;
+    std::cout << "incline forw\n";
+    break;
+  case INCLINE_BACKW:
+    desiredPitch = 20.f;
+    desiredRoll = 0.f;
+    std::cout << "incline backw\n";
+    break;
+  case INCLINE_LEFT:
+    desiredPitch = 0.f;
+    desiredRoll = 20.f;
+    std::cout << "incline left\n";
+    break;
+  case INCLINE_RIGHT:
+    desiredPitch = 0.f;
+    desiredRoll = -20.f;
+    std::cout << "incline right\n";
+    break;
+  case INCLINE_DEFAULT:
+    desiredPitch = 0.f;
+    desiredRoll = 0.f;
+    std::cout << "incline default\n";
+    break;
+  case ARM:
+    arm();
+    break;
+  case CALIBRATE:
+    calibrate();
+    break;
+  }
+}
+
+void FlightController::setPropCoef(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  proportionalCoef = value;
+}
+
+void FlightController::setDerCoef(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  derivativeCoef = value;
+}
+
+void FlightController::setIntCoef(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  integralCoef = value;
+}
+
+void FlightController::setPitchBias(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  pitchBias = value;
+}
+
+void FlightController::setRollBias(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  rollBias = value;
+}
+
+void FlightController::setRPM(int value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  val = value;
+}
+
+void FlightController::setPrevValInfluence(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  prevValInfluence = value;
+}
+
+void FlightController::setAccTrust(float value)
+{
+  std::unique_lock<std::mutex> lck(commandMutex);
+  accTrust = value;
 }

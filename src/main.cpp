@@ -15,7 +15,7 @@ int main()
   DebugSender debugger("8082");
   debugger.start();
 
-  FlightController * flightControllerPtr = FlightController::Init(false, &debugger);
+  FlightController * flightControllerPtr = FlightController::Init(&debugger);
   flightControllerPtr->start();
   
   ControlsReceiver controlsReceiver(flightControllerPtr);
