@@ -6,13 +6,16 @@
 
 using namespace rapidjson;
 
-void DebugSender::sendInfo(float pitchError, float rollError, int64_t timestamp)
+void DebugSender::sendInfo(DebugInfo i)
 {
   Document d;
   Value& rootObj = d.SetObject();
-  rootObj.AddMember("pitchErr", pitchError, d.GetAllocator());
-  rootObj.AddMember("rollErr", rollError, d.GetAllocator());
-  rootObj.AddMember("timestamp", timestamp, d.GetAllocator());
+  rootObj.AddMember("pe", i.pitchError, d.GetAllocator());
+  rootObj.AddMember("re", i.rollError, d.GetAllocator());
+  rootObj.AddMember("peChR", i.pitchErrorChangeRate, d.GetAllocator());
+  rootObj.AddMember("reChR", i.rollErrorChangeRate, d.GetAllocator());
+  rootObj.AddMember("pChR", i.pitchChangeRate, d.GetAllocator());
+  rootObj.AddMember("rChR", i.rollChangeRate, d.GetAllocator());
   StringBuffer buffer;
   Writer<StringBuffer> writer(buffer);
   d.Accept(writer);

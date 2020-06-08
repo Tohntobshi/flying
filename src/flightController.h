@@ -40,6 +40,8 @@ private:
   float rollBias = 0.f;
   float accTrust = 0.1f;
   float prevValInfluence = 0.f;
+  float prevPitchErrChangeRate = 0.f;
+  float prevRollErrChangeRate = 0.f;
   void iterate();
   DebugSender * debugger = nullptr;
 public:

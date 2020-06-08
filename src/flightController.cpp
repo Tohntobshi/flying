@@ -177,8 +177,8 @@ void FlightController::iterate()
   float rollChangeRate = - gyro.x;
   float currentPitch = accPitch * accTrust + (1.f - accTrust) * (prevPitch + pitchChangeRate * secondsElapsed);
   float currentRoll = accRoll * accTrust + (1.f - accTrust) * (prevRoll + rollChangeRate * secondsElapsed);
-  currentPitch = (1.f - prevValInfluence) * currentPitch + prevValInfluence * prevPitch;
-  currentRoll = (1.f - prevValInfluence) * currentRoll + prevValInfluence * prevRoll;
+  // currentPitch = (1.f - prevValInfluence) * currentPitch + prevValInfluence * prevPitch;
+  // currentRoll = (1.f - prevValInfluence) * currentRoll + prevValInfluence * prevRoll;
   // std::cout << "pitch " << currentPitch << " roll " << currentRoll << " seconds elapsed " << secondsElapsed << "\n";
   // // one implementation
   // float joyPitch = degrees(atan2(joystickPos.y, joystickPos.z));
@@ -204,17 +204,20 @@ void FlightController::iterate()
   float currentRollError = desiredRoll - currentRoll;
   float prevPitchError = desiredPitch - prevPitch;
   float prevRollError = desiredRoll - prevRoll;
-  float pitchErrorChangeRate = (currentPitchError - prevPitchError) / secondsElapsed;
-  float rollErrorChangeRate = (currentRollError - prevRollError) / secondsElapsed;
+  // float pitchErrorChangeRate = (currentPitchError - prevPitchError) / secondsElapsed;
+  // float rollErrorChangeRate = (currentRollError - prevRollError) / secondsElapsed;
+  float pitchErrorChangeRate = -pitchChangeRate * (1.f - prevValInfluence) + prevPitchErrChangeRate * prevValInfluence;
+  float rollErrorChangeRate = -rollChangeRate * (1.f - prevValInfluence) + prevRollErrChangeRate * prevValInfluence;
   pitchErrInt += currentPitchError * secondsElapsed;
-  rollErrInt += currentRollError * secondsElapsed; 
+  rollErrInt += currentRollError * secondsElapsed;
 
   int pitchAdjust = currentPitchError * proportionalCoef + pitchErrorChangeRate * derivativeCoef + pitchErrInt * integralCoef;
   int rollAdjust = currentRollError * proportionalCoef + rollErrorChangeRate * derivativeCoef + rollErrInt * integralCoef;
   if (val < MIN_VAL)
   {
     controlAll(0);
-    // std::cout << "pitchAdjust " << pitchAdjust << " rollAdjust " << rollAdjust << "\n";
+    pitchErrInt = 0.f;
+    rollErrInt = 0.f;
   }
   else if (val == MIN_VAL)
   {
@@ -227,10 +230,12 @@ void FlightController::iterate()
   prevPitch = currentPitch;
   prevRoll = currentRoll;
   prevTimeStamp = currentTimestamp;
+  prevPitchErrChangeRate = pitchErrorChangeRate;
+  prevRollErrChangeRate = rollErrorChangeRate;
   lck.unlock();
   if (debugger != nullptr)
   {
-    debugger->sendInfo(currentPitchError, currentRollError, currentTimestamp);
+    debugger->sendInfo({ false, currentPitchError, currentRollError, pitchErrorChangeRate, rollErrorChangeRate, pitchChangeRate, rollChangeRate });
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
 }
@@ -290,6 +295,8 @@ void FlightController::setIntCoef(float value)
 {
   std::unique_lock<std::mutex> lck(commandMutex);
   integralCoef = value;
+  pitchErrInt = 0.f;
+  rollErrInt = 0.f;
 }
 
 void FlightController::setPitchBias(float value)
