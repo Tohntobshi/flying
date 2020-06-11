@@ -14,8 +14,8 @@ void DebugSender::sendInfo(DebugInfo i)
   rootObj.AddMember("re", i.rollError, d.GetAllocator());
   rootObj.AddMember("peChR", i.pitchErrorChangeRate, d.GetAllocator());
   rootObj.AddMember("reChR", i.rollErrorChangeRate, d.GetAllocator());
-  rootObj.AddMember("pChR", i.pitchChangeRate, d.GetAllocator());
-  rootObj.AddMember("rChR", i.rollChangeRate, d.GetAllocator());
+  rootObj.AddMember("ySE", i.yawSpeedError, d.GetAllocator());
+  rootObj.AddMember("ySEChR", i.yawSpeedErrorChangeRate, d.GetAllocator());
   StringBuffer buffer;
   Writer<StringBuffer> writer(buffer);
   d.Accept(writer);

@@ -41,16 +41,59 @@ void ControlsReceiver::parseCommand(uint8_t * data)
       flightController->command(type);
       return;
     }
-    if (type == SET_RPM)
-    {
-      int val = d["v"].GetInt();
-      flightController->setRPM(val);
-      return;
-    }
-    if (type == SET_ROLL_BIAS)
+
+    if (type == SET_PITCH_PROP_COEF)
     {
       float val = d["v"].GetFloat();
-      flightController->setRollBias(val);
+      flightController->setPitchPropCoef(val);
+      return;
+    }
+    if (type == SET_PITCH_DER_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setPitchDerCoef(val);
+      return;
+    }
+    if (type == SET_PITCH_INT_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setPitchIntCoef(val);
+      return;
+    }
+    if (type == SET_ROLL_PROP_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setRollPropCoef(val);
+      return;
+    }
+    if (type == SET_ROLL_DER_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setRollDerCoef(val);
+      return;
+    }
+    if (type == SET_ROLL_INT_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setRollIntCoef(val);
+      return;
+    }
+    if (type == SET_YAW_SP_PROP_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setYawSpPropCoef(val);
+      return;
+    }
+    if (type == SET_YAW_SP_DER_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setYawSpDerCoef(val);
+      return;
+    }
+    if (type == SET_YAW_SP_INT_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setYawSpIntCoef(val);
       return;
     }
     if (type == SET_PITCH_BIAS)
@@ -59,22 +102,22 @@ void ControlsReceiver::parseCommand(uint8_t * data)
       flightController->setPitchBias(val);
       return;
     }
-    if (type == SET_DER_COEF)
+    if (type == SET_ROLL_BIAS)
     {
       float val = d["v"].GetFloat();
-      flightController->setDerCoef(val);
+      flightController->setRollBias(val);
       return;
     }
-    if (type == SET_INT_COEF)
+    if (type == SET_YAW_SPEED_BIAS)
     {
       float val = d["v"].GetFloat();
-      flightController->setIntCoef(val);
+      flightController->setYawSpeedBias(val);
       return;
     }
-    if (type == SET_PROP_COEF)
+    if (type == SET_BASE_VAL)
     {
-      float val = d["v"].GetFloat();
-      flightController->setPropCoef(val);
+      int val = d["v"].GetInt();
+      flightController->setBaseVal(val);
       return;
     }
     if (type == SET_ACC_TRUST)
@@ -83,10 +126,28 @@ void ControlsReceiver::parseCommand(uint8_t * data)
       flightController->setAccTrust(val);
       return;
     }
-    if (type == SET_PREV_VAL_INF)
+    if (type == SET_INC_CH_RATE_FILTER_COEF)
     {
       float val = d["v"].GetFloat();
-      flightController->setPrevValInfluence(val);
+      flightController->setIncChangeRateFilteringCoef(val);
+      return;
+    }
+    if (type == SET_YAW_SP_FILTER_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setYawSpFilteringCoef(val);
+      return;
+    }
+    if (type == SET_YAW_SP_CH_RATE_FILTER_COEF)
+    {
+      float val = d["v"].GetFloat();
+      flightController->setYawSpChangeRateFilteringCoef(val);
+      return;
+    }
+    if (type == SET_ONLY_POSITIVE_ADJUST_MODE)
+    {
+      int val = d["v"].GetInt();
+      flightController->setOnlyPositiveAdjustMode((bool)val);
       return;
     }
   }
